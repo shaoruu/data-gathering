@@ -10,6 +10,8 @@ from shutil import copyfile
 TEMPLATE_PLACEHOLDER = "TEMPLATE"
 COLOR_PLACEHOLDER = "COLOR"
 
+obj_colors = dict()
+
 
 def get_first_file_of_ext(directory, ext):
     return [f for f in os.listdir(
@@ -19,9 +21,12 @@ def get_first_file_of_ext(directory, ext):
 def load_obj(pathname, x, y, z):
     shift = [0, -0.02, 0]
     meshScale = [0.01, 0.01, 0.01]
+    color = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
+
+    obj_colors[pathname] = color
 
     visualShapeId = p.createVisualShape(shapeType=p.GEOM_MESH, fileName=pathname, rgbaColor=[
-                                        1, 1, 1, 1], specularColor=[0.4, 0.4, 0], visualFramePosition=shift, meshScale=meshScale)
+                                        *color, 1], specularColor=[0.4, 0.4, 0], visualFramePosition=shift, meshScale=meshScale)
 
     try:
         collisionShapeId = p.createCollisionShape(

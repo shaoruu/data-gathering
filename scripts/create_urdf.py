@@ -1,8 +1,9 @@
 import os
 import glob
 import fileinput
+import random
+import pybullet as p
 from shutil import copyfile
-from random import randrange
 
 # foldername = folder name in extracted
 
@@ -15,37 +16,38 @@ def get_first_file_of_ext(directory, ext):
         directory) if f.endswith(ext)][0]
 
 
-def create_urdf(foldername, extracted_folder, template_urdf_path):
-    target_dir = os.path.join(extracted_folder, foldername)
+def load_obj(pathname, x, y, z):
+    shift = [0, -0.02, 0]
+    meshScale = [0.01, 0.01, 0.01]
 
-    obj_file = get_first_file_of_ext(target_dir, ".obj")[:-4]
-    copied_file = os.path.join(target_dir, f"{obj_file}.urdf")
+    visualShapeId = p.createVisualShape(shapeType=p.GEOM_MESH, fileName=pathname, rgbaColor=[
+                                        1, 1, 1, 1], specularColor=[0.4, 0.4, 0], visualFramePosition=shift, meshScale=meshScale)
 
-    copyfile(template_urdf_path, copied_file)
+    try:
+        collisionShapeId = p.createCollisionShape(
+            shapeType=p.GEOM_MESH, fileName=pathname, collisionFramePosition=shift, meshScale=meshScale)
+    except:
+        print(pathname)
+        return
 
-    with open(copied_file, 'r+') as file:
-        filedata = file.read()
-        filedata = filedata.replace(TEMPLATE_PLACEHOLDER, obj_file)
-        filedata = filedata.replace(
-            COLOR_PLACEHOLDER, f"{randrange(5)/10 + .5} {randrange(5)/10 + .5} {randrange(5)/10 + .5}")
-        file.seek(0)
-        file.write(filedata)
+    uid = p.createMultiBody(baseMass=1, baseInertialFramePosition=[-0.2, 0, 0], baseCollisionShapeIndex=collisionShapeId,
+                            baseVisualShapeIndex=visualShapeId, basePosition=[x, y, z], useMaximalCoordinates=True)
 
-    return copied_file
+    for _ in range(150):
+        p.stepSimulation()
+
+    return uid
 
 
-def load_x_urdfs(p, parent_folder, urdf_template_path, count, offset=0):
+def load_x_urdfs(parent_folder, pos_range, count, offset=0):
     folders = os.listdir(parent_folder)[offset:offset+count]
 
     pos_offset = int(count / 2)
 
     for folder in folders:
-        pos_x = randrange(pos_offset) - pos_offset / 2
-        pos_y = randrange(pos_offset) - pos_offset / 2
-        pos_z = 1
+        target_dir = os.path.join(parent_folder, folder)
+        obj_file = get_first_file_of_ext(target_dir, ".obj")
+        obj_path = os.path.join(target_dir, obj_file)
 
-        obj_urdf_path = create_urdf(folder, parent_folder, urdf_template_path)
-        obj_start_pos = [pos_x, pos_y, pos_z]
-        obj_start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-        obj_id = p.loadURDF(obj_urdf_path, obj_start_pos,
-                            obj_start_orientation)
+        load_obj(obj_path, random.uniform(-pos_range, pos_range),
+                 random.uniform(-pos_range, pos_range), 0.15)

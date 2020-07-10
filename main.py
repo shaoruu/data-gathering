@@ -12,10 +12,10 @@ TEMPLATE_URDF_PATH = "./templates/template.urdf"
 if __name__ == "__main__":
     physics_client = p.connect(p.GUI)
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    p.setGravity(0.0, 0.0, -1.0)
+    p.setGravity(0.0, 0.0, -9.0)
     plane_id = p.loadURDF("plane.urdf")
 
-    load_x_urdfs(p, EXTRACTED_FOLDER, TEMPLATE_URDF_PATH, 10, 200)
+    load_x_urdfs(EXTRACTED_FOLDER, 10, 10)
 
     for i in range(10000):
         p.stepSimulation()

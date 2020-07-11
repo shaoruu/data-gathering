@@ -2,6 +2,10 @@ import numpy as np
 import pybullet as p
 
 
+pixelWidth = 320
+pixelHeight = 200
+
+
 def get_uv(xyz, viewMatrix, projectionMatrix):
     xyz = np.concatenate([xyz, np.array([1.])])
     viewMatrix = np.array(viewMatrix).reshape(4, 4)
@@ -19,37 +23,47 @@ def get_uv(xyz, viewMatrix, projectionMatrix):
     return u, v
 
 
-def show_viewmatrix_image(viewMatrix, projectionMatrix):
+def get_view_image(vm=None, pm=None):
+    if not vm and not pm:
+        vm, pm = compute_basic_matrices()
+
+    viewMatrix, projectionMatrix = compute_basic_matrices()
+
     width, height, rgbImg, depthImg, segImg = p.getCameraImage(
         width=244,
         height=244,
         viewMatrix=viewMatrix,
         projectionMatrix=projectionMatrix)
 
+    return rgbImg
+
 
 def compute_basic_matrices():
-    viewMatrix = p.computeViewMatrix(
-        cameraEyePosition=[0, 0, 3],
+    viewMatrix = p.computeViewMatrixFromYawPitchRoll(
         cameraTargetPosition=[0, 0, 0],
-        cameraUpVector=[0, 1, 0])
+        distance=8,
+        yaw=180,
+        pitch=-90.0,
+        roll=0,
+        upAxisIndex=2)
     projectionMatrix = p.computeProjectionMatrixFOV(
-        fov=45.0,
-        aspect=1.0,
-        nearVal=0.1,
-        farVal=3.1)
+        fov=60.0,
+        aspect=pixelWidth / pixelHeight,
+        nearVal=0.01,
+        farVal=100)
 
     return viewMatrix, projectionMatrix
 
 
 def get_obj_2d_pos(obj_id, show_image=False):
-    cube_pos, cube_orn = p.getBasePositionAndOrientation(obj_id)
+    obj_pos, obj_orn = p.getBasePositionAndOrientation(obj_id)
 
     vm, pm = compute_basic_matrices()
 
     if show_image:
-        show_viewmatrix_image(vm, pm)
+        get_view_image(vm, pm)
 
-    return get_uv(cube_pos, vm, pm)
+    return get_uv(obj_pos, vm, pm)
 
 
 def pos3d_to_pos2d(pos3d):
@@ -58,7 +72,7 @@ def pos3d_to_pos2d(pos3d):
     return get_uv(pos3d, vm, pm)
 
 
-def get_bbox(obj_id, show_image=True):
+def get_bbox(obj_id, show_image=False):
     aa, bb = p.getAABB(obj_id)
 
     aau, aav = pos3d_to_pos2d(aa)
@@ -66,6 +80,6 @@ def get_bbox(obj_id, show_image=True):
 
     if show_image:
         vm, pm = compute_basic_matrices()
-        show_viewmatrix_image(vm, pm)
+        get_view_image(vm, pm)
 
     return (aau, aav), (bbu, bbv)

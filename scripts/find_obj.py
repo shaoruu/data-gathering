@@ -23,15 +23,15 @@ def get_uv(xyz, viewMatrix, projectionMatrix):
     return u, v
 
 
-def get_view_image(vm=None, pm=None):
+def get_view_image(w=244, h=244, vm=None, pm=None):
     if not vm and not pm:
         vm, pm = compute_basic_matrices()
 
     viewMatrix, projectionMatrix = compute_basic_matrices()
 
     width, height, rgbImg, depthImg, segImg = p.getCameraImage(
-        width=244,
-        height=244,
+        width=w,
+        height=h,
         viewMatrix=viewMatrix,
         projectionMatrix=projectionMatrix)
 

@@ -7,10 +7,85 @@ from shutil import copyfile
 
 # foldername = folder name in extracted
 
-TEMPLATE_PLACEHOLDER = "TEMPLATE"
-COLOR_PLACEHOLDER = "COLOR"
-
 obj_colors = dict()
+
+IDEAL_VOLUME = 0.01
+
+
+def get_first_file_of_ext(directory, ext):
+    return [f for f in os.listdir(
+        directory) if f.endswith(ext)][0]
+
+
+def get_obj_volume(obj_id):
+    (ax, ay, az), (bx, by, bz) = p.getAABB(obj_id)
+    return abs(ax - bx) * abs(ay - by) * abs(az - bz)
+
+
+def load_obj(folder, pathname, x, y, z):
+    shift = [0, -0.02, 0]
+
+    # scale = OBJ_AND_SCALE.get(folder)
+    # if scale:
+    #     meshScale = [scale, scale, scale]
+
+    color = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(
+        0, 1)] if pathname not in obj_colors else obj_colors[pathname]
+    obj_colors[pathname] = color
+
+    def create(scale=0.01):
+        meshScale = [scale, scale, scale]
+
+        visualShapeId = p.createVisualShape(shapeType=p.GEOM_MESH, fileName=pathname, rgbaColor=[
+                                            *color, 1], specularColor=[0.4, 0.4, 0], visualFramePosition=shift, meshScale=meshScale)
+
+        try:
+            collisionShapeId = p.createCollisionShape(
+                shapeType=p.GEOM_MESH, fileName=pathname, collisionFramePosition=shift, meshScale=meshScale)
+        except:
+            print(pathname)
+            return
+
+        uid = p.createMultiBody(baseMass=1, baseInertialFramePosition=[-0.2, 0, 0], baseCollisionShapeIndex=collisionShapeId,
+                                baseVisualShapeIndex=visualShapeId, basePosition=[x, y, z], useMaximalCoordinates=True)
+
+        return uid
+
+    test_uid = create()
+    test_scale = IDEAL_VOLUME / get_obj_volume(test_uid) ** (1 / 3)
+    p.removeBody(test_uid)
+
+    actual_id = create(test_scale)
+
+    for _ in range(150):
+        p.stepSimulation()
+
+    return actual_id
+
+
+def load_x_objs(parent_folder, pos_range, count=-1, offset=0):
+    folders = sorted(os.listdir(parent_folder))
+    if count != -1:
+        folders = folders[offset:offset+count]
+
+    pos_offset = int(count / 2)
+
+    data = []
+
+    for folder in folders:
+        target_dir = os.path.join(parent_folder, folder)
+        obj_file = get_first_file_of_ext(target_dir, ".obj")
+        obj_path = os.path.join(target_dir, obj_file)
+
+        obj_id = load_obj(folder, obj_path, random.uniform(-pos_range, pos_range),
+                          random.uniform(-pos_range, pos_range), 5)
+        data.append({
+            "id": obj_id,
+            "file": folder
+        })
+
+    return data
+
 
 OBJ_AND_SCALE = {
     "00000002": 0.03,
@@ -114,67 +189,3 @@ OBJ_AND_SCALE = {
     "00000177": 0.008,
     "00000178": 0.007,
 }
-
-
-def get_first_file_of_ext(directory, ext):
-    return [f for f in os.listdir(
-        directory) if f.endswith(ext)][0]
-
-
-def load_obj(folder, pathname, x, y, z):
-    shift = [0, -0.02, 0]
-    meshScale = [0.01, 0.01, 0.01]
-
-    scale = OBJ_AND_SCALE.get(folder)
-    if scale:
-        meshScale = [scale, scale, scale]
-
-    color = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
-
-    obj_colors[pathname] = color
-
-    visualShapeId = p.createVisualShape(shapeType=p.GEOM_MESH, fileName=pathname, rgbaColor=[
-                                        *color, 1], specularColor=[0.4, 0.4, 0], visualFramePosition=shift, meshScale=meshScale)
-
-    try:
-        collisionShapeId = p.createCollisionShape(
-            shapeType=p.GEOM_MESH, fileName=pathname, collisionFramePosition=shift, meshScale=meshScale)
-    except:
-        print(pathname)
-        return
-
-    uid = p.createMultiBody(baseMass=1, baseInertialFramePosition=[-0.2, 0, 0], baseCollisionShapeIndex=collisionShapeId,
-                            baseVisualShapeIndex=visualShapeId, basePosition=[x, y, z], useMaximalCoordinates=True)
-
-    for _ in range(150):
-        p.stepSimulation()
-
-    return uid
-
-
-def load_x_objs(parent_folder, pos_range, count=-1, offset=0):
-    folders = sorted(os.listdir(parent_folder))
-    if count != -1:
-        folders = folders[offset:offset+count]
-
-    print(folders)
-
-    pos_offset = int(count / 2)
-
-    data = []
-
-    for folder in folders:
-        target_dir = os.path.join(parent_folder, folder)
-        obj_file = get_first_file_of_ext(target_dir, ".obj")
-        obj_path = os.path.join(target_dir, obj_file)
-
-        obj_id = load_obj(folder, obj_path, random.uniform(-pos_range, pos_range),
-                          random.uniform(-pos_range, pos_range), 5)
-        data.append({
-            "id": obj_id,
-            "file": folder
-        })
-
-    print(data)
-
-    return data

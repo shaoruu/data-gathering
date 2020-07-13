@@ -9,6 +9,8 @@ autopep8 = "*"
 [packages]
 numpy = "*"
 pybullet = "*"
+pypng = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.8"

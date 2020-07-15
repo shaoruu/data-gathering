@@ -100,7 +100,7 @@ class BulletToCOCO():
         rgb_img = get_view_image(
             PIXEL_WIDTH, PIXEL_HEIGHT, view_matrix, projection_matrix)
         im = Image.fromarray(rgb_img)
-        img_id = str(len(self.images))
+        img_id = len(self.images)
 
         img_filename = str(img_id)+'.png'
         img_path = os.path.join(self.save_path, 'images', img_filename)
